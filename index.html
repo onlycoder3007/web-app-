@@ -1,0 +1,199 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nazarbek's Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .task-container {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .task-container button {
+            margin-left: 10px;
+        }
+        .action-btn {
+            background-color: #007BFF;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .delete-btn {
+            background-color: #FF4C4C;
+        }
+        .reset-btn, .add-task-btn {
+            background-color: #28A745;
+            margin: 10px;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+        #newTaskModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #newTaskModal .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Nazarbek's Schedule</h2>
+
+    <!-- Reset and Add New Task buttons -->
+    <button class="reset-btn" onclick="resetAllTasks()">Reset All Tasks</button>
+    <button class="add-task-btn" onclick="openNewTaskModal()">Add New Task</button>
+
+    <!-- Task Template -->
+    <div id="task-template" class="task-container hidden">
+        <p class="task-time"></p>
+        <p>Did you complete this task?</p>
+        <button class="action-btn" onclick="completeTask(this)">Yes, I did</button>
+        <button class="action-btn" onclick="skipTask(this)">No, I did not</button>
+        <button class="delete-btn" onclick="deleteTask(this)">Delete Task</button>
+    </div>
+
+    <!-- Task List -->
+    <div id="task-list">
+        <!-- Dynamic tasks will be injected here -->
+    </div>
+
+    <!-- Modal for adding new task -->
+    <div id="newTaskModal">
+        <div class="modal-content">
+            <h3>Add New Task</h3>
+            <label>Task Name:</label>
+            <input type="text" id="newTaskName" placeholder="Task name">
+            <br><br>
+            <label>From (e.g., 8:00 AM):</label>
+            <input type="text" id="newTaskStartTime" placeholder="Start time">
+            <br><br>
+            <label>To (e.g., 9:00 AM):</label>
+            <input type="text" id="newTaskEndTime" placeholder="End time">
+            <br><br>
+            <button onclick="addNewTask()">Add Task</button>
+            <button onclick="closeNewTaskModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const tasks = [
+            { time: '4:00 - 5:00 AM', name: 'Wake Up' },
+            { time: '5:00 - 7:00 AM', name: 'Create 10-Day Plan' },
+            { time: '7:00 - 9:00 AM', name: 'Drink tea and drop Munisa at kindergarten' },
+            { time: '9:00 - 11:00 AM', name: 'Continue 10-Day Plan' },
+            { time: '11:00 AM - 12:00 PM', name: 'Rest' },
+            { time: '12:00 - 12:30 PM', name: 'Prepare for school' },
+            { time: '6:00 - 6:30 PM', name: 'Rest after school' },
+            { time: '6:30 - 7:30 PM', name: 'Do school homework' },
+            { time: '7:30 - 8:30 PM', name: 'Read Dale Carnegie & Focus Book' },
+            { time: '8:30 - 9:30 PM', name: 'Ride bicycle' },
+            { time: '9:30 - 10:00 PM', name: 'Shower' },
+            { time: '10:00 - 10:30 PM', name: 'Spend time with Zilola' },
+            { time: '11:00 - 12:00 PM', name: 'Sleep' },
+        ];
+
+        let completedTasks = JSON.parse(localStorage.getItem('completedTasks')) || [];
+
+        const botToken = '7327202478:AAEI-NuxccmxT8oZukMkj1Gf3CICWMPIyQ4';  // Add your bot token here
+        const chatId = '1448742881';      // Add your chat ID here
+
+        function loadTasks() {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = ''; // Clear task list
+            tasks.forEach((task, index) => {
+                if (!completedTasks.includes(index)) {
+                    const taskElement = document.getElementById('task-template').cloneNode(true);
+                    taskElement.classList.remove('hidden');
+                    taskElement.querySelector('.task-time').innerText = `${task.time}: ${task.name}`;
+                    taskElement.setAttribute('data-index', index);
+                    taskList.appendChild(taskElement);
+                }
+            });
+        }
+
+        function completeTask(btn) {
+            const taskIndex = parseInt(btn.closest('.task-container').getAttribute('data-index'));
+            completedTasks.push(taskIndex);
+            localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+            loadTasks();
+
+            // Send completed task to bot
+            const task = tasks[taskIndex];
+            sendToBot(`Nazarbek did this task: ${task.name} (${task.time})`);
+        }
+
+        function skipTask(btn) {
+            alert('Keep going! You got this!');
+        }
+
+        function deleteTask(btn) {
+            const taskIndex = parseInt(btn.closest('.task-container').getAttribute('data-index'));
+            completedTasks.push(taskIndex); // Mark task as deleted
+            localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+            loadTasks();
+        }
+
+        function resetAllTasks() {
+            completedTasks = [];
+            localStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+            loadTasks();
+        }
+
+        function openNewTaskModal() {
+            document.getElementById('newTaskModal').style.display = 'flex';
+        }
+
+        function closeNewTaskModal() {
+            document.getElementById('newTaskModal').style.display = 'none';
+        }
+
+        function addNewTask() {
+            const taskName = document.getElementById('newTaskName').value;
+            const startTime = document.getElementById('newTaskStartTime').value;
+            const endTime = document.getElementById('newTaskEndTime').value;
+            tasks.push({ time: `${startTime} - ${endTime}`, name: taskName });
+            closeNewTaskModal();
+            loadTasks();
+        }
+
+        function sendToBot(message) {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).then(response => response.json())
+            .then(data => console.log('Message sent to bot:', data))
+            .catch(error => console.error('Error sending message to bot:', error));
+        }
+
+        loadTasks(); // Load tasks on page load
+    </script>
+</body>
+</html>
